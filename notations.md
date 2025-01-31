@@ -1,5 +1,17 @@
 # Estudos NodeJS
 
+## Índice
+
+- [Fundamentos](#01---fundamentos)
+  - [HTTP](#http)
+  - [Memória](#memória)
+  - [Streams](#streams)
+  - [Async](#async)
+  - [Buffers](#buffers)
+  - [Middlewares](#middlewares)
+  - [Route e Query Parameters](#route-e-query-parameters)
+- [Rotas e HTTP](#02---rotas-e-http)
+
 ## 01 - Fundamentos
 
 - Iniciar Projeto: `npm init -y`, cria o arquivo `package.json`
@@ -92,3 +104,5 @@ Na forma de leitura do `Stream` no node acabaria que um pedaço daquele arquivo 
 - **Query Parameters**: URL Stateful - Filtros, paginação, não-obrigatórios. Exemplo: `http://localhost:3333/users?userID=1&name=Diego`
 - **Route Parameters**: Identificação de recurso. Exemplo: `http://localhost:3333/users/1`
 - **Request Body**: Envio de informações de um formulário (HTTPs)
+
+## 02 - Rotas e HTTP
