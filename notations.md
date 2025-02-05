@@ -11,6 +11,14 @@
   - [Middlewares](#middlewares)
   - [Route e Query Parameters](#route-e-query-parameters)
 - [Rotas e HTTP](#02---rotas-e-http)
+  - [Configurações iniciais](#configurações-iniciais)
+  - [Banco de dados](#banco-de-dados)
+  - [Migrations](#migrations)
+  - [Env - Variáveis de Ambiente](#env---variáveis-de-ambiente)
+  - [Planejamento de aplicações](#planejamento-de-aplicações)
+  - [Cookies](#cookies)
+  - [Testes Automatizados](#testes-automatizados)
+  - [Deploy](#deploy)
 
 ## 01 - Fundamentos
 
@@ -107,7 +115,7 @@ Na forma de leitura do `Stream` no node acabaria que um pedaço daquele arquivo 
 
 ## 02 - Rotas e HTTP
 
-- Configurações iniciais:
+### Configurações iniciais:
 
 ```bash
 $ npm i -D typescript @types/node tsx
