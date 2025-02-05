@@ -21,10 +21,10 @@
 - Para manter o server atualizando novas informações do código adicione o `--watch`, como por exemplo: `node --watch src/server.js`
 - Para facilitar adicione nos scripts do `package.json` e rode `npm run dev`:
 
-```
-    "scripts": {
-        "dev": "node --watch src/server.js "
-    },
+```json
+"scripts": {
+  "dev": "node --watch src/server.js "
+},
 ```
 
 ### HTTP
@@ -80,10 +80,10 @@ POST /users => Criando novo usuário no back-end
 
 - Exemplo: Leitura de uma resposta http que vem um json:
 
-```
+```json
 {
-    "name": "Fulano",
-    "email": "fulano@example.com"
+  "name": "Fulano",
+  "email": "fulano@example.com"
 }
 ```
 
@@ -106,3 +106,321 @@ Na forma de leitura do `Stream` no node acabaria que um pedaço daquele arquivo 
 - **Request Body**: Envio de informações de um formulário (HTTPs)
 
 ## 02 - Rotas e HTTP
+
+- Configurações iniciais:
+
+```bash
+$ npm i -D typescript @types/node tsx
+$ npx tsc --init
+$
+```
+
+- Alterar o `target` do `ts.config` para uma das opções:
+
+  - `ESNext`
+  - `ES2023`
+
+- Instalar o fastify:
+
+```bash
+$ npm i fastify
+```
+
+- Conversão do código com tsx, adicione no `package.json`:
+
+```json
+"dev": "tsx watch src/server.ts"
+```
+
+### Banco de dados
+
+- Knex - Query Builder: facilita o uso de queries do sql para a linguagem usada,no caso do Knex faz a queries de acordo com métodos do js.
+
+- Instalação Knex:
+
+```bash
+$ npm install knex sqlite3
+
+```
+
+- Configurando banco:
+
+```ts
+// database.ts
+// criar pasta tmp
+
+import { knex as setupKnex } from "knex";
+
+export const knex = setupKnex({
+  client: "sqlite",
+  connection: {
+    filename: "./tmp/app.db",
+  },
+});
+
+// Uso inicial (teste), usando fastify
+// server.ts:
+
+import fastify from "fastify";
+import { knex } from "./database";
+
+const app = fastify();
+
+app.get("/hello", async () => {
+  const tables = await knex("sqlite_schema").select("*");
+
+  return tables;
+});
+
+app
+  .listen({
+    port: 3333,
+  })
+  .then(() => {
+    console.log("HTTP Server runing");
+  });
+```
+
+### Migrations
+
+> "Controle de versão" das tabelas. Histórico das mudanças feitas no banco de dados.
+
+- Configuração para criar migrations com o knex:
+
+```ts
+// criar arquivo knexfile.ts/.js
+
+import { config } from "./src/database";
+
+export default config;
+
+// alterar o database.ts para exportar as configurações:
+
+import { knex as setupKnex } from "knex";
+
+export const config = {
+  client: "sqlite",
+  connection: {
+    filename: "./tmp/app.db",
+  },
+  useNullAsDefault: true,
+};
+
+export const knex = setupKnex(config);
+```
+
+- Adicionar script no package.json
+
+```json
+"knex": "node --import tsx ./node_modules/knex/bin/cli.js"
+
+```
+
+- Criação de migrations com o knex (com as configs usando ts e tsx):
+
+```bash
+$ npm run knex -- migrate:make migration-name
+```
+
+- A migrations possuem duas funções **`up`** e **`down`**, no caso da **`up`** ela indica o que a migration vai fazer no banco de dados, e **`down`** caso necessário dar um rollback, por exemplo na **`up`** ela cria uma tabela nova de `users` e na função **`down`** ela remove essa tabela `users`.
+
+- Exemplo prático:
+
+```ts
+import type { Knex } from "knex";
+
+export async function up(knex: Knex): Promise<void> {
+  await knex.schema.createTable("transactions", (table) => {
+    table.uuid("id").primary();
+    table.text("title").notNullable();
+  });
+}
+
+export async function down(knex: Knex): Promise<void> {
+  await knex.schema.dropTable("transactions");
+}
+```
+
+- Para executar todas as migrations:
+
+```bash
+$ npm run knex -- migrate:latest
+```
+
+- Para rverter a migration:
+
+```bash
+$ npm run knex -- migrate:rollback
+```
+
+### Env - Variáveis de Ambiente
+
+> Usadas para guardar valores como chaves e urls para diferentes ambientes de desenvolvimento, como produção ou dev.
+
+- É geralmente recomendado criar um arquivo `.env.example` para deixar exemplificada o que tem no `.env`, mas nem todas as informações são passadas, como senhas que não devem subir para o github.
+
+- Para usar no node, baixe o pacote:
+
+```bash
+$ npm i dotenv
+```
+
+- Crie um arquivo `.env` para guardar as variaveis, para acessar pelo node use o `process`, como no exemplo:
+
+```ts
+import "dotenv/config";
+
+const db = process.env.DATABASE_URL;
+```
+
+- Usando **`zod`** para validação das variaveis:
+
+  - Crie um arquivo em `scr/env/index.ts`
+  - Deixe a importação do dotenv nesse arquivo: `import "dotenv/config"`.
+  - Configuração padrão:
+
+  ```ts
+  import "dotenv/config";
+  import { z } from "zod";
+
+  const envSchema = z.object({
+    DATABASE_URL: z.string(),
+    PORT: z.number().default(3333),
+  });
+
+  export const env = envSchema.parse(process.env);
+  ```
+
+  - Para tratar os erros de melhor forma, altere as linhas finais do código:
+
+  ```ts
+  // ...
+
+  const _env = envSchema.safeParse(process.env);
+
+  if (_env.success === false) {
+    console.error("Invalid enviroment variable!", _env.error.format());
+
+    throw new Error("Invalid enviroment variable!");
+  }
+
+  export const env = _env.data;
+  ```
+
+  ### Planejamento de aplicações
+
+  - **RF (Requisitos Funcionais)**: São as funcionalidades que o sistema precisa ter para atender às necessidades do usuário.
+    Exemplo:
+    - O usuário deve poder criar uma conta.
+    - O sistema deve enviar um e-mail de confirmação após o cadastro.
+    - O cliente pode adicionar produtos ao carrinho e finalizar a compra.
+  - **RN (Regras de Negócio)**: São as diretrizes ou condições específicas de como o sistema deve operar dentro do contexto do negócio.
+    Exemplo:
+    - Para pedidos acima de R$ 200,00, oferecer frete grátis.
+    - Não permitir que menores de 18 anos comprem bebidas alcoólicas.
+    - Se um cliente devolver um produto, o reembolso só será efetuado após a análise do item.
+  - **RNF (Requisitos Não funcionais)**: São características de qualidade do sistema, como desempenho, segurança e usabilidade.
+    Exemplo:
+    - O sistema deve carregar a página inicial em até 2 segundos.
+    - As informações do usuário devem ser criptografadas.
+    - O site deve estar disponível 99,9% do tempo ao longo do ano.
+
+### Cookies
+
+> Formas de manter contexto entre requisições, no caso pode guardar informações de requisição de um usuário mesmo sem estar logado, gerando um id para a máquina e que caso ele logue na, esse histórico permaneça salvo na conta dele.
+
+- Trabalhando com `cookies` com `fastify`:
+- Instale:
+
+```bash
+$ npm i @fastify/cookie
+```
+
+- Adicione o plugin ao fastify, sendo o primeiro na ordem de registro:
+
+```ts
+import fastify from "fastify";
+import cookie from "@fastify/cookie";
+import { transactionsRoutes } from "./routes/transactions";
+
+const app = fastify();
+
+app.register(cookie);
+app.register(transactionsRoutes, {
+  prefix: "transactions",
+});
+```
+
+- Criar um "`middleware`" global com `fastify` para ser executado em todas as rotas dentro do plugin:
+
+```ts
+app.addHook("preHandler", async (request, reply) => {
+  console.log(`[${request.method}] ${request.url}`);
+});
+
+// ... resto das rotas
+
+// app.get()
+```
+
+- Ou pode ser adiciona antes de registrar os puglins das rotas no `server.ts` para ser global para qualquer rota na aplicação.
+
+### Testes Automatizados
+
+- **Unitários**: Testam exclusivamente uma pequena parte isolada da aplicação, teste de uma função de soma por exemplo.
+- **Integração**: Testa a comunicação de duas ou mais unidades, por exemplo fazer um testes de duas funções, uma função de soma que chama outra função que renderiza um gráfico com esses dados.
+- **e2e/ponta a ponta**: Testes que simulam um usuário operando na aplicação.
+
+- Utilizando Vitest, instalação:
+
+```bash
+$ npm i vitest -D
+```
+
+- Uso:
+
+```ts
+import { test } from "vitest";
+
+test("o usuário consegue criar uma nova transação", () => {
+  // fazer a chamada HTTP
+
+  // validação
+  expect(response.status).toEqual(201);
+});
+```
+
+- Para rodas os testes:
+
+```bash
+$ npx vitest
+```
+
+- Ou criando um script para rodar `test`:
+
+```bash
+$ npm test
+```
+
+- Para poder testar uma rota sem usar o servidor real, instale:
+
+```bash
+$ npm i supertest -D
+$ npm i @types/supertest -D
+```
+
+### Deploy
+
+> Envio da aplicação para produção
+
+- Serviço gerenciado usando `tsup`:
+
+```bash
+$ npm i tsup -D
+```
+
+- Crie o script no `package.json`, com a flag para criar a pasta `build` apm invés da padrão `dist`
+
+```json
+"build": "tsup src --out-dir build",
+```
