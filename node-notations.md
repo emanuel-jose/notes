@@ -19,6 +19,7 @@
   - [Cookies](#cookies)
   - [Testes Automatizados](#testes-automatizados)
   - [Deploy](#deploy)
+- [API Node.js com SOLID](#03---api-nodejs-com-solid)
 
 ## 01 - Fundamentos
 
@@ -432,3 +433,5 @@ $ npm i tsup -D
 ```json
 "build": "tsup src --out-dir build",
 ```
+
+## 03 - API Node.js com SOLID
